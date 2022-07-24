@@ -14,50 +14,11 @@ void DataPointsData(char* name);
 double euclideanDistance(double* vectorA, double* vectorB);
 double** WeightedAdjMat();
 double** DiagDegMat(double** weights);
+double ** MatMultiply(double ** mat1, double ** mat2);
 double** NormalGraphLap();
-
-void InvalidInput() {
-    printf("Invalid Input!");
-}
 
 void ErrorOccured() {
     printf("An Error Has Occured!");
-}
-
-void DataPointsData(char* name) {
-    FILE * input = fopen(name, "r");
-    if (input == NULL) {
-        ErrorOccured();
-    }
-    dplen = 0, dpamount = 0;
-    c = fgetc(input);
-    while (c !='\n'){
-        if (c == ','){
-            dplen++;
-        }
-        c = fgetc(input);
-    }
-    dplen++;
-    while (c != EOF){
-        if (c == '\n'){
-            dpamount++;
-        }
-        c = fgetc(input);
-    }
-    rewind(input);
-    dps = (double**)calloc(dpamount, sizeof(double*));
-    if (dps == NULL) { ErrorOccured(); }
-    for (i = 0; i < dpamount ; i++){
-        dps[i] = (double*)calloc(dplen, sizeof(double));
-        if (dps[i] == NULL) { ErrorOccured(); }
-    }
-    for (i = 0 ; i < dpamount ; i++){
-        for (j = 0; j < dplen ; j++){
-            fscanf(input, "%lf%c",&point, &psik);
-            dps[i][j] = point;
-        }
-    }
-    fclose(input);
 }
 
 double euclideanDistance(double* vectorA, double* vectorB){
@@ -69,7 +30,7 @@ double euclideanDistance(double* vectorA, double* vectorB){
     return sqrt(sum_squares);
 }
 
-double** WeightedAdjMat() {
+double** WeightedAdjMat() { /* wam */
     double** mat = (double**)calloc(dpamount, sizeof(double*));
     if (mat == NULL) { ErrorOccured(); }
     for (i = 0 ; i < dpamount ; i ++) {
@@ -93,7 +54,7 @@ double** WeightedAdjMat() {
     return mat;
 }
 
-double** DiagDegMat(double** weights) {
+double** DiagDegMat(double** weights) { /* ddg */
     double sum;
     double** mat = (double**)calloc(dpamount, sizeof(double*));
     if (mat == NULL) { ErrorOccured(); }
@@ -111,25 +72,36 @@ double** DiagDegMat(double** weights) {
     return mat;
 }
 
-double** main(int argc, char* argv[]) {
-    if (argc != 3) {
-        InvalidInput();
-    }
-    char* algo = argv[1];
-    char* file = argv[2];
-    if ("algo" == "jacobi") {
-        
-    } else { 
-        DataPointsData(file);
-        if ("algo" == "wam") {
-            WeightedAdjMat();
-        } else if ("algo" == "ddg") {
-            DiagDegMat(WeightedAdjMat()); /* not good */
-        } else if ("algo" == "lnorm") {
-            NormalGraphLap();
-        } else {
-            InvalidInput();
-    }
+double ** MatMultiply(double ** mat1, double ** mat2) {
 
-    } return NULL;
+}
+
+double ** NormalGraphLap(double ** weights, double ** diagmat) {
+    double ** multiplied;
+    double ** diagmatnew = (double**)calloc(dpamount, sizeof(double*));
+    if (diagmatnew == NULL) { ErrorOccured(); }
+    for (i = 0 ; i < dpamount ; i ++) {
+        diagmatnew[i] = (double*)calloc(dpamount, sizeof(double));
+        if (diagmatnew[i] == NULL) { ErrorOccured(); }
+    }
+    for (i = 0 ; i < dpamount ; i ++) {
+        diagmatnew[i][i] = (1/sqrt(diagmat[i][i]));
+    }
+    double ** mat = (double**)calloc(dpamount, sizeof(double*));
+    if (mat == NULL) { ErrorOccured(); }
+    for (i = 0 ; i < dpamount ; i ++) {
+        mat[i] = (double*)calloc(dpamount, sizeof(double));
+        if (mat[i] == NULL) { ErrorOccured(); }
+    }
+    multiplied = MatMultiply(MatMultiply(diagmatnew, weights), diagmatnew);
+    for (i = 0 ; i < dpamount ; i++) {
+        for (j = 0 ; j < dpamount ; j++) {
+            if (i==j) {
+                mat[i][j] = 1 - multiplied[i][j];
+            } else {
+            mat[i][j] = -multiplied[i][j];
+            }
+        }
+    }
+    return mat;
 }
