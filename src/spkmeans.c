@@ -14,7 +14,7 @@ void DataPointsData(char* name);
 double euclideanDistance(double* vectorA, double* vectorB);
 double** WeightedAdjMat();
 double** DiagDegMat(double** weights);
-double ** MatMultiply(double ** mat1, double ** mat2);
+double ** MatMultiply(double ** mat1, double ** mat2, int n);
 double** NormalGraphLap();
 
 void ErrorOccured() {
@@ -22,7 +22,6 @@ void ErrorOccured() {
 }
 
 double euclideanDistance(double* vectorA, double* vectorB){
-    int i;
     double sum_squares = 0;
     for (i = 0 ; i < dplen ; i++){
         sum_squares += pow((vectorA[i]-vectorB[i]),2);
@@ -72,11 +71,30 @@ double** DiagDegMat(double** weights) { /* ddg */
     return mat;
 }
 
-double ** MatMultiply(double ** mat1, double ** mat2) {
-
+double ** MatMultiply(double ** mat1, double ** mat2, int n) {
+    int q, i, j;
+    double sum = 0;
+    double ** multResult = (double**)calloc(n, sizeof(double*));
+    if (multResult == NULL) {
+        ErrorOccured();
+    }
+    for (i = 0 ; i < n ; i ++) {
+        multResult[i] = (double*)calloc(n, sizeof(double));
+        if (multResult[i] == NULL) { ErrorOccured(); }
+    }
+    for (i = 0 ; i < n ; i ++) {
+        for (j = 0; j < n; j ++){
+            sum = 0;
+        for (q = 0; q < n; q ++){
+            sum = sum + mat1[i][q]*mat2[q][j];
+        }
+        multResult[i][j] = sum;
+    }
+}
+    return multResult;
 }
 
-double ** NormalGraphLap(double ** weights, double ** diagmat) {
+double ** NormalGraphLap(double ** weights, double ** diagmat) { /* lnorm */
     double ** multiplied;
     double ** diagmatnew = (double**)calloc(dpamount, sizeof(double*));
     if (diagmatnew == NULL) { ErrorOccured(); }
@@ -93,7 +111,7 @@ double ** NormalGraphLap(double ** weights, double ** diagmat) {
         mat[i] = (double*)calloc(dpamount, sizeof(double));
         if (mat[i] == NULL) { ErrorOccured(); }
     }
-    multiplied = MatMultiply(MatMultiply(diagmatnew, weights), diagmatnew);
+    multiplied = MatMultiply(MatMultiply(diagmatnew, weights, dpamount), diagmatnew, dpamount);
     for (i = 0 ; i < dpamount ; i++) {
         for (j = 0 ; j < dpamount ; j++) {
             if (i==j) {
