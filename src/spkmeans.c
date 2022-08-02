@@ -26,7 +26,7 @@ double ** processPyObject(PyObject* data_points, int n, int d);
 static PyObject *kMeans(PyObject *data_points, PyObject *initial_centroids, int n,int k,int d,double eps,int max_iter);
 double ** weightedAdjMatC(double** points, int n, int d);
 static PyObject *weightedAdjMat(PyObject *data_points, int n, int d);
-double ** diagDegMatC(double** points, int n, int d);
+double ** diagDegMatC(double** points, double** weights, int n, int d);
 static PyObject *diagDegMat(PyObject *data_points, int n, int d);
 static PyObject *normalGraphLap(PyObject *data_points, int n, int d);
 static PyObject *jacobian(PyObject *sym_max, int n);
@@ -327,10 +327,9 @@ static PyObject* weightedAdjMat(PyObject *data_points, int n, int d){ /*wam */
     return res;
 }
 
-double ** diagDegMatC(double** points, int n, int d) {
+double ** diagDegMatC(double** points, double ** weights, int n, int d) {
     double sum;
     int i, j;
-    double ** weights = weightedAdjMat(points, n, d);
     double** mat = (double**)calloc(n, sizeof(double*));
     if (mat == NULL) { errorOccured(); }
     for (i = 0 ; i < n ; i ++) {
@@ -344,17 +343,18 @@ double ** diagDegMatC(double** points, int n, int d) {
             }
         mat[i][i] = sum;
     }
+    return mat;
 }
  
 static PyObject* diagDegMat(PyObject *data_points, int n, int d) { /* ddg */
     int i, j;
     double ** points = processPyObject(data_points, n, d);
     double ** weights = weightedAdjMatC(points, n, d);
-    double** mat = diagDegMatC(points, n, d);
+    double** mat = diagDegMatC(points, weights, n, d);
     PyObject * res;
     res = PyList_New(0);
     PyObject *pylist;
-    for (i = 0; i < n; +i++) {
+    for (i = 0; i < n; i++) {
         pylist = PyList_New(0);
         for (j = 0; j < d; j++) {
             if (PyList_Append(pylist, PyFloat_FromDouble(mat[i][j])) != 0)
@@ -363,7 +363,7 @@ static PyObject* diagDegMat(PyObject *data_points, int n, int d) { /* ddg */
         if (PyList_Append(res, pylist) != 0)
         return NULL;
     }
-    return mat;
+    return res;
 }
 
 static PyObject* normalGraphLap(PyObject *data_points, int n, int d) { /* lnorm */
@@ -371,7 +371,7 @@ static PyObject* normalGraphLap(PyObject *data_points, int n, int d) { /* lnorm 
     int i, j;
     double ** points = processPyObject(data_points, n, d);
     double ** weights = weightedAdjMatC(points, n, d);
-    double ** diagmat = diagDegMatC(points, n, d);
+    double ** diagmat = diagDegMatC(points, weights, n, d);
     double ** diagmatnew = (double**)calloc(n, sizeof(double*));
     if (diagmatnew == NULL) { errorOccured(); }
     for (i = 0 ; i < n ; i ++) {
@@ -400,7 +400,7 @@ static PyObject* normalGraphLap(PyObject *data_points, int n, int d) { /* lnorm 
     PyObject * res;
     res = PyList_New(0);
     PyObject *pylist;
-    for (i = 0; i < n; +i++) {
+    for (i = 0; i < n; i++) {
         pylist = PyList_New(0);
         for (j = 0; j < d; j++) {
             if (PyList_Append(pylist, PyFloat_FromDouble(mat[i][j])) != 0)
@@ -409,7 +409,7 @@ static PyObject* normalGraphLap(PyObject *data_points, int n, int d) { /* lnorm 
         if (PyList_Append(res, pylist) != 0)
         return NULL;
     }
-    return mat;
+    return res;
 }
 
 static PyObject *jacobian(PyObject *sym_max, int n) {
