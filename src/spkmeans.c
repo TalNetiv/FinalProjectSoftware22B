@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 int n, d; /*send to functions*/
-void ErrorOccured();
+void errorOccured();
 static void emptyCentroids(int k, double** centroids);
 static void emptyClusters(int k, double ***clusters);
 static void addVectors(double *vectorA, double *vectorB, int d);
@@ -29,7 +29,7 @@ static PyObject *diagDegMat(PyObject *data_points, int n, int d);
 static PyObject *normalGraphLap(PyObject *data_points, int n, int d);
 static PyObject *jacobian(PyObject *sym_max, int n);
 
-void ErrorOccured() {
+void errorOccured() {
     printf("An Error Has Occured!");
 }
 
@@ -180,11 +180,11 @@ double ** matMultiply(double ** mat1, double ** mat2, int n) {
     double sum = 0;
     double ** multResult = (double**)calloc(n, sizeof(double*));
     if (multResult == NULL) {
-        ErrorOccured();
+        errorOccured();
     }
     for (i = 0 ; i < n ; i ++) {
         multResult[i] = (double*)calloc(n, sizeof(double));
-        if (multResult[i] == NULL) { ErrorOccured(); }
+        if (multResult[i] == NULL) { errorOccured(); }
     }
     for (i = 0 ; i < n ; i ++) {
         for (j = 0; j < n; j ++){
@@ -285,10 +285,10 @@ static PyObject* weightedAdjMat(PyObject *data_points, int n, int d){ /*wam */
     int i, j;
     double ** points = processPyObject(data_points, n, d);
     double** mat = (double**)calloc(n, sizeof(double*));
-    if (mat == NULL) { ErrorOccured(); }
+    if (mat == NULL) { errorOccured(); }
     for (i = 0 ; i < n ; i ++) {
         mat[i] = (double*)calloc(n, sizeof(double));
-        if (mat[i] == NULL) { ErrorOccured(); }
+        if (mat[i] == NULL) { errorOccured(); }
     }
     for (i = 0 ; i < n ; i ++) {
         for (j = i ; j < (n) ; j++) {
@@ -312,10 +312,10 @@ static PyObject* diagDegMat(PyObject *data_points, int n, int d) { /* ddg */
     int i, j;
     double ** weights = weightedAdjMat(data_points, n, d);
     double** mat = (double**)calloc(n, sizeof(double*));
-    if (mat == NULL) { ErrorOccured(); }
+    if (mat == NULL) { errorOccured(); }
     for (i = 0 ; i < n ; i ++) {
         mat[i] = (double*)calloc(n, sizeof(double));
-        if (mat[i] == NULL) { ErrorOccured(); }
+        if (mat[i] == NULL) { errorOccured(); }
     }
     for (i = 0 ; i < n ; i++) {
         sum = 0;
@@ -333,21 +333,21 @@ static PyObject* normalGraphLap(PyObject *data_points, int n, int d) { /* lnorm 
     double ** weights = weightedAdjMat(data_points, n, d);
     double ** diagmat = diagDegMat(data_points, n, d);
     double ** diagmatnew = (double**)calloc(n, sizeof(double*));
-    if (diagmatnew == NULL) { ErrorOccured(); }
+    if (diagmatnew == NULL) { errorOccured(); }
     for (i = 0 ; i < n ; i ++) {
         diagmatnew[i] = (double*)calloc(n, sizeof(double));
-        if (diagmatnew[i] == NULL) { ErrorOccured(); }
+        if (diagmatnew[i] == NULL) { errorOccured(); }
     }
     for (i = 0 ; i < n ; i ++) {
         diagmatnew[i][i] = (1/sqrt(diagmat[i][i]));
     }
     double ** mat = (double**)calloc(n, sizeof(double*));
-    if (mat == NULL) { ErrorOccured(); }
+    if (mat == NULL) { errorOccured(); }
     for (i = 0 ; i < n ; i ++) {
         mat[i] = (double*)calloc(n, sizeof(double));
-        if (mat[i] == NULL) { ErrorOccured(); }
+        if (mat[i] == NULL) { errorOccured(); }
     }
-    multiplied = m(m(diagmatnew, weights, n), diagmatnew, n);
+    multiplied = matMultiply(matMultiply(diagmatnew, weights, n), diagmatnew, n);
     for (i = 0 ; i < n ; i++) {
         for (j = 0 ; j < n ; j++) {
             if (i == j) {

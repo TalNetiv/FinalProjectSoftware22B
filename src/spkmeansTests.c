@@ -16,10 +16,10 @@ int main(void) /* test matMultiply */
     double matMultAns[9] = {30.0, 36.0, 42.0, 66.0, 81.0, 96.0, 102.0, 126.0, 150.0};
 
     double ** mat1 = (double**)calloc(3, sizeof(double*));
-    if (mat1 == NULL) { ErrorOccured(); }
+    if (mat1 == NULL) { errorOccured(); }
     for (i = 0 ; i < 3 ; i ++) {
         mat1[i] = (double*)calloc(3, sizeof(double));
-        if (mat1[i] == NULL) { ErrorOccured(); }
+        if (mat1[i] == NULL) { errorOccured(); }
     }
     for (i = 0 ; i < 3 ; i ++) {
         for (j=0; j< 3; j++){
@@ -29,10 +29,10 @@ int main(void) /* test matMultiply */
     }
     cnt = 1;
     double ** mat2 = (double**)calloc(3, sizeof(double*));
-    if (mat2 == NULL) { ErrorOccured(); }
+    if (mat2 == NULL) { errorOccured(); }
     for (i = 0 ; i < 3 ; i ++) {
         mat2[i] = (double*)calloc(3, sizeof(double));
-        if (mat2[i] == NULL) { ErrorOccured(); }
+        if (mat2[i] == NULL) { errorOccured(); }
     }
     for (i = 0 ; i < 3 ; i ++) {
         for (j=0; j< 3; j++){

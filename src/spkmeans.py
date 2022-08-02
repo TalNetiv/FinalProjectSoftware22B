@@ -2,6 +2,7 @@ import enum
 import sys
 import pandas as pd
 import numpy as np
+import spkmodule
 
 class goals(enum):
     SPK = "spk"
