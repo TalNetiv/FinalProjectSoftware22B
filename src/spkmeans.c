@@ -263,9 +263,9 @@ static PyObject* kMeans(PyObject *data_points, PyObject *initial_centroids, int 
     }
     res = PyList_New(0);
     PyObject *pylist;
-    for (i = 0; i < k; ++i) {
+    for (i = 0; i < k; i++) {
         pylist = PyList_New(0);
-        for (j = 0; j < d; ++j) {
+        for (j = 0; j < d; j++) {
             if (PyList_Append(pylist, PyFloat_FromDouble(centroids[i][j])) != 0)
             return NULL;
         }
@@ -304,7 +304,19 @@ static PyObject* weightedAdjMat(PyObject *data_points, int n, int d){ /*wam */
             }
         }
     }
-    return mat;
+    PyObject * res;
+    res = PyList_New(0);
+    PyObject *pylist;
+    for (i = 0; i < n; +i++) {
+        pylist = PyList_New(0);
+        for (j = 0; j < d; j++) {
+            if (PyList_Append(pylist, PyFloat_FromDouble(mat[i][j])) != 0)
+            return NULL;
+        }
+        if (PyList_Append(res, pylist) != 0)
+        return NULL;
+    }
+    return res;
 }
  
 static PyObject* diagDegMat(PyObject *data_points, int n, int d) { /* ddg */
@@ -323,6 +335,18 @@ static PyObject* diagDegMat(PyObject *data_points, int n, int d) { /* ddg */
             sum += weights[i][j];
             }
         mat[i][i] = sum;
+    }
+    PyObject * res;
+    res = PyList_New(0);
+    PyObject *pylist;
+    for (i = 0; i < n; +i++) {
+        pylist = PyList_New(0);
+        for (j = 0; j < d; j++) {
+            if (PyList_Append(pylist, PyFloat_FromDouble(mat[i][j])) != 0)
+            return NULL;
+        }
+        if (PyList_Append(res, pylist) != 0)
+        return NULL;
     }
     return mat;
 }
@@ -356,6 +380,18 @@ static PyObject* normalGraphLap(PyObject *data_points, int n, int d) { /* lnorm 
             mat[i][j] = -multiplied[i][j];
             }
         }
+    }
+    PyObject * res;
+    res = PyList_New(0);
+    PyObject *pylist;
+    for (i = 0; i < n; +i++) {
+        pylist = PyList_New(0);
+        for (j = 0; j < d; j++) {
+            if (PyList_Append(pylist, PyFloat_FromDouble(mat[i][j])) != 0)
+            return NULL;
+        }
+        if (PyList_Append(res, pylist) != 0)
+        return NULL;
     }
     return mat;
 }
