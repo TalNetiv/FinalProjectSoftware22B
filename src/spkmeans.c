@@ -315,7 +315,7 @@ static PyObject* weightedAdjMat(PyObject *data_points, int n, int d){ /*wam */
     PyObject * res;
     res = PyList_New(0);
     PyObject *pylist;
-    for (i = 0; i < n; +i++) {
+    for (i = 0; i < n; i++) {
         pylist = PyList_New(0);
         for (j = 0; j < d; j++) {
             if (PyList_Append(pylist, PyFloat_FromDouble(mat[i][j])) != 0)
@@ -413,6 +413,6 @@ static PyObject* normalGraphLap(PyObject *data_points, int n, int d) { /* lnorm 
 }
 
 static PyObject *jacobian(PyObject *sym_max, int n) {
-
+    return PyList_New(0);
 }
 
