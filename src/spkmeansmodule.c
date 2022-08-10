@@ -43,17 +43,16 @@ static PyObject* CToPy(double** mat, int n, int d) {
 /* args are the arguments passed from the python program*/
 static PyObject* spk(PyObject *self, PyObject *args){
     PyObject *data_points, *initial_centroids; /* both in the format of long doubles list */
-    int n, k, d, max_iter;
-    double eps;
+    int n, k, d;
     double** points, ** centroids;
 
-    if (!PyArg_ParseTuple(args, "OOiiiid", &data_points, &initial_centroids, &n, &k, &d, &max_iter, &eps)){
+    if (!PyArg_ParseTuple(args, "OOiii", &data_points, &initial_centroids, &n, &k, &d)){
         return NULL; /*  NULL implies an error occured because it's not allowed for PyObject* to be NULL*/
     }
     /* build the answer ("d" = convert a C double to a python floating point number) back into a python object */
     points = PyToC(data_points, n, d);
     centroids = PyToC(initial_centroids, n, d);
-    return CToPy(kMeans(points, centroids, n, k, d, eps, max_iter), n, d);
+    return CToPy(kMeans(points, centroids, n, k, d), n, d);
 }
 
 static PyObject* wam(PyObject *self, PyObject *args){

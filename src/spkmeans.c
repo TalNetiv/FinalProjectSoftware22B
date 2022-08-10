@@ -1,5 +1,4 @@
 #define PY_SSIZE_T_CLEAN
-#include <Python.h>
 #include <stdio.h>
 #include <assert.h>
 #include <math.h>
@@ -7,7 +6,10 @@
 #include <stdlib.h>
 
 int n, d; /*send to functions*/
-void errorOccured();
+static void errorOccured();
+static double ** initializeMat(int n, int d);
+static double ** readFromFile(char* fileName);
+static void printMat(double** mat, int n);
 static void emptyCentroids(int k, double** centroids);
 static void emptyClusters(int k, double ***clusters);
 static void addVectors(double *vectorA, double *vectorB, int d);
@@ -17,21 +19,85 @@ static void insertToCluster(double ** cluster, double *vector, int d);
 static int isVectorZero(double *vector, int d);
 static int bestCluster(int point_index, int k, int d, double **cPoints, double **centroids);
 static int convergentTrue(double ** curr, double ** prev, int d, int k);
-double euclideanDistance(double* vectorA, double* vectorB, int d);
+static double euclideanDistance(double* vectorA, double* vectorB, int d);
 static void calculateCentroids(int cluster_index, int d, double ***clusters, double *centroid);
 static void getPrevCentroids(int k, int d, double** centroids, double **getPrevCentroids);
 static double*** createClusters(int k, int d, int n);
-double ** matMultiply(double ** mat1, double ** mat2, int n);
-static double** kMeans(double** data_points, double** initial_centroids, int n,int k,int d,double eps,int max_iter);
-double ** weightedAdjMatC(double** points, int n, int d);
-static  weightedAdjMat(double** data_points, int n, int d);
-double ** diagDegMatC(double** points, double** weights, int n, int d);
+static double** matMultiply(double ** mat1, double ** mat2, int n);
+static double** kMeans(double** points, double** initial_centroids, int n, int k, int d);
+static  double** weightedAdjMat(double** data_points, int n, int d);
 static double** diagDegMat(double** data_points, int n, int d);
 static double** normalGraphLap(double** data_points, int n, int d);
-static double** jacobian(double** sym_max, int n);
+/* static double** jacobian(double** sym_max, int n); */
 
-void errorOccured() {
+static void errorOccured() {
     printf("An Error Has Occured!");
+    exit(1);
+}
+
+static double ** initializeMat(int n, int d){
+    int i;
+    double ** mat = (double**)calloc(n, sizeof(double*));
+    if (mat == NULL) { errorOccured(); }
+    for (i = 0 ; i < n ; i ++) {
+        mat[i] = (double*)calloc(d, sizeof(double));
+        if (mat[i] == NULL) { errorOccured(); }
+    }
+    return mat;
+}
+
+static double ** readFromFile(char* fileName){
+    double ** points;
+    int i, j;
+    double cord;
+    char psik, c;
+    FILE *ifp;
+    ifp = fopen(fileName, "r");
+    if (ifp == NULL) {
+        errorOccured();
+    }
+    printf("passed first error barrier");
+    c = fgetc(ifp);
+    while (c !='\n'){
+        if (c == ','){
+            d++;
+        }
+        c = fgetc(ifp);
+    }
+    d++;
+    while (c != EOF){
+        if (c == '\n'){
+        n++;
+        }
+        c = fgetc(ifp);
+    }
+    rewind(ifp);
+    printf("go initialize points in read from file");
+    points = initializeMat(n, d);
+    for (i = 0; i < n; i++){
+        for (j = 0; j < d; j++){
+            fscanf(ifp, "%lf%c",&cord, &psik);
+            points[i][j] = cord;
+        }
+    }
+    fclose(ifp);
+    return points;
+}
+
+static void printMat(double** mat, int n){
+    int rows, columns;
+ 	for(rows = 0; rows < n; rows++)
+  	{
+        printf("row num: %d  " , rows); /* delete on submission !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+  		for(columns = 0; columns < n; columns++)
+  		{
+  			if (columns == n - 1){
+                printf("%.4f \n" , mat[rows][columns]);
+            } else{
+                printf("%.4f,", mat[rows][columns]);
+            }
+		}
+  	}  	
 }
 
 static void emptyCentroids(int k, double **centroids) {
@@ -179,14 +245,7 @@ static double*** createClusters(int k, int d, int n){
 double ** matMultiply(double ** mat1, double ** mat2, int n) {
     int i, j, k;
     double sum = 0;
-    double ** multResult = (double**)calloc(n, sizeof(double*));
-    if (multResult == NULL) {
-        errorOccured();
-    }
-    for (i = 0 ; i < n ; i ++) {
-        multResult[i] = (double*)calloc(n, sizeof(double));
-        if (multResult[i] == NULL) { errorOccured(); }
-    }
+    double ** multResult = initializeMat(n, n);
     for (i = 0 ; i < n ; i ++) {
         for (j = 0; j < n; j ++){
             sum = 0;
@@ -199,65 +258,37 @@ double ** matMultiply(double ** mat1, double ** mat2, int n) {
     return multResult;
 }
 
-static double** kMeans(double** data_points, double** initial_centroids, int n, int k, int d, double eps, int max_iter){
-    int i, j, iter;
+static double** kMeans(double** points, double** initial_centroids, int n, int k, int d){
+    int iter;
     double **centroids, **prevCentroids;
     double *** clusters;
-    centroids = (double **)calloc(k, sizeof(double *));
-    if (centroids == NULL){
-        errorOccured();
-    }
-    for (i = 0; i < k; i++){
-        centroids[i] = (double *)calloc(d, sizeof(double));
-        if (centroids[i] == NULL){
-            errorOccured();
-    }
-        for (j = 0; j < d; j++){  
-            centroids[i][j] = PyFloat_AsDouble(PyList_GetItem(initial_centroids,i*d +j));
-        }
-    }
-    prevCentroids = (double **)calloc(k, sizeof(double *));
-    if (prevCentroids == NULL){
-        errorOccured();
-    }
-    for (i = 0; i < k; i++){
-        prevCentroids[i] = (double *)calloc(d, sizeof(double));
-        if(prevCentroids[i] == NULL){
-            errorOccured();
-        }
-    }
+    centroids = initializeMat(k, d);
+    centroids = initial_centroids;
+    prevCentroids = initializeMat(k, d);
     getPrevCentroids(k, d, centroids, prevCentroids);
     clusters = createClusters(k, d, n);
-    distribute(n, k, d, clusters, cPoints, centroids);
+    distribute(n, k, d, clusters, points, centroids);
     updateCentroids(k, d, centroids, clusters);
     iter = 0;
-    while (convergentTrue(centroids, prevCentroids, d, k) == 0 && iter < max_iter){
+    while (convergentTrue(centroids, prevCentroids, d, k) == 0 && iter < 300){
         getPrevCentroids(k, d, centroids, prevCentroids);
         emptyClusters(k, clusters);
         clusters = createClusters(k, d, n);
-        distribute(n, k, d, clusters, cPoints, centroids);
+        distribute(n, k, d, clusters, points, centroids);
         updateCentroids(k, d, centroids, clusters);
         iter++;
     }
-    return centroids;
-}
-
     emptyClusters(k, clusters);
     emptyCentroids(k, centroids);
     emptyCentroids(k, prevCentroids);
-    emptyCentroids(n, cPoints);
-
-    return res;
+    emptyCentroids(n, points);
+    return centroids;
 }
 
-double ** weightedAdjMatC(double** points, int n, int d) {
+ 
+static double** weightedAdjMat(double** points, int n, int d){ /*wam */
     int i, j;
-    double** mat = (double**)calloc(n, sizeof(double*));
-    if (mat == NULL) { errorOccured(); }
-    for (i = 0 ; i < n ; i ++) {
-        mat[i] = (double*)calloc(n, sizeof(double));
-        if (mat[i] == NULL) { errorOccured(); }
-    }
+    double** mat = initializeMat(n, n);
     for (i = 0 ; i < n ; i ++) {
         for (j = i ; j < (n) ; j++) {
             if (i == j) {
@@ -275,21 +306,11 @@ double ** weightedAdjMatC(double** points, int n, int d) {
     return mat;
 }
  
-static double** weightedAdjMat(double** data_points, int n, int d){ /*wam */
-    int i, j;
-    double ** mat = weightedAdjMatC(points, n, d);
-    return res;
-}
-
-double ** diagDegMatC(double** points, double ** weights, int n, int d) {
+static double** diagDegMat(double** points, int n, int d) { /* ddg */
     double sum;
     int i, j;
-    double** mat = (double**)calloc(n, sizeof(double*));
-    if (mat == NULL) { errorOccured(); }
-    for (i = 0 ; i < n ; i ++) {
-        mat[i] = (double*)calloc(n, sizeof(double));
-        if (mat[i] == NULL) { errorOccured(); }
-    }
+    double ** weights = weightedAdjMat(points, n, d);
+    double** mat = initializeMat(n, n);
     for (i = 0 ; i < n ; i++) {
         sum = 0;
         for (j = 0; j < n ; j++) {
@@ -299,33 +320,16 @@ double ** diagDegMatC(double** points, double ** weights, int n, int d) {
     }
     return mat;
 }
- 
-static double** diagDegMat(double** data_points, int n, int d) { /* ddg */
-    int i, j;
-    double ** weights = weightedAdjMatC(points, n, d);
-    double** mat = diagDegMatC(points, weights, n, d);
-    return res;
-}
 
-static double** normalGraphLap(double** data_points, int n, int d) { /* lnorm */
+static double** normalGraphLap(double** points, int n, int d) { /* lnorm */
     double ** multiplied;
     int i, j;
-    double ** weights = weightedAdjMatC(points, n, d);
-    double ** diagmat = diagDegMatC(points, weights, n, d);
-    double ** diagmatnew = (double**)calloc(n, sizeof(double*));
-    if (diagmatnew == NULL) { errorOccured(); }
-    for (i = 0 ; i < n ; i ++) {
-        diagmatnew[i] = (double*)calloc(n, sizeof(double));
-        if (diagmatnew[i] == NULL) { errorOccured(); }
-    }
+    double ** weights = weightedAdjMat(points, n, d);
+    double ** diagmat = diagDegMat(points, n, d);
+    double ** diagmatnew = initializeMat(n, n);
+    double ** mat = initializeMat(n, n);
     for (i = 0 ; i < n ; i ++) {
         diagmatnew[i][i] = (1/sqrt(diagmat[i][i]));
-    }
-    double ** mat = (double**)calloc(n, sizeof(double*));
-    if (mat == NULL) { errorOccured(); }
-    for (i = 0 ; i < n ; i ++) {
-        mat[i] = (double*)calloc(n, sizeof(double));
-        if (mat[i] == NULL) { errorOccured(); }
     }
     multiplied = matMultiply(matMultiply(diagmatnew, weights, n), diagmatnew, n);
     for (i = 0 ; i < n ; i++) {
@@ -337,9 +341,55 @@ static double** normalGraphLap(double** data_points, int n, int d) { /* lnorm */
             }
         }
     }
-    return res;
+    return mat;
 }
 
 /*static PyObject *jacobian(PyObject *sym_max, int n) {
 
 }*/
+
+int main(int argc, char *argv[]){
+
+    double **points, **mat;
+    char *goal = argv[1];
+    char *fileName = argv[2];
+
+    if (argc != 3){ 
+        printf("Invalid Input!Main");
+        exit(1);
+    }
+    if ( (strcmp(goal, "wam") != 0) && (strcmp(goal, "ddg") != 0) && (strcmp(goal, "lnorm") != 0) && (strcmp(goal, "jacobi") != 0) ){  /*check goal validity*/ 
+        printf("Invalid Input!Main");
+        exit(1);
+    }
+
+    printf("go read from file");
+    points = readFromFile(fileName);
+    printf("done reading from file\n");
+
+ /*   if (strcmp(goal, "jacobi") == 0){  ###add free mat func
+        res = initializeMat(n+1, n);
+        res = jacobi(points);
+        print2Darray(res, n, n);
+        free2D(points);
+        free2D(res);
+        return 0;
+    } */
+    mat = initializeMat(n, n);
+    printf("ken");
+    if (strcmp(goal, "wam") == 0){
+        mat = weightedAdjMat(points, n, d);
+    }
+    if (strcmp(goal, "ddg") == 0){
+        mat = diagDegMat(points, n, d);
+    }
+    if (strcmp(goal, "lnorm") == 0){
+        mat = normalGraphLap(points, n, d);
+    }
+    if (strcmp(goal, "charta") == 0){
+        mat = kMeans(mat, mat, 1,1,1);
+    }
+    /* add free to matrices here */
+    printMat(mat, n);
+    return 0; 
+}
