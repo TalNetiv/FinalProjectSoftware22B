@@ -1,62 +1,113 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-#include "spkmeans.c"
+#include "spkmeans.h"
+
+double ** PyToC(PyObject *data_points, int n, int d) {
+    int i, j;
+    double **cPoints;
+    cPoints = (double **)calloc(n, sizeof(double *));
+    if (cPoints == NULL){
+        errorOccured();
+    }
+    for (i = 0; i < n; i++){
+        cPoints[i] = (double *)calloc(d, sizeof(double));
+        if (cPoints[i] == NULL){
+            errorOccured();
+    }
+    }
+    for (i = 0; i < n; i++){
+        for (j = 0; j < d; j++){
+            cPoints[i][j]=PyFloat_AsDouble(PyList_GetItem(data_points, i*d + j));
+        }
+    } 
+    return cPoints;
+}
+
+static PyObject* CToPy(double** mat, int n, int d) {
+    int i, j;
+    PyObject * res;
+    res = PyList_New(0);
+    PyObject *pylist;
+    for (i = 0; i < n; i++) {
+        pylist = PyList_New(0);
+        for (j = 0; j < d; j++) {
+            if (PyList_Append(pylist, PyFloat_FromDouble(mat[i][j])) != 0)
+            return NULL;
+        }
+        if (PyList_Append(res, pylist) != 0)
+        return NULL;
+    }
+    return res;
+}
 
 /* args are the arguments passed from the python program*/
 static PyObject* spk(PyObject *self, PyObject *args){
     PyObject *data_points, *initial_centroids; /* both in the format of long doubles list */
     int n, k, d, max_iter;
     double eps;
+    double** points, ** centroids;
 
     if (!PyArg_ParseTuple(args, "OOiiiid", &data_points, &initial_centroids, &n, &k, &d, &max_iter, &eps)){
         return NULL; /*  NULL implies an error occured because it's not allowed for PyObject* to be NULL*/
     }
     /* build the answer ("d" = convert a C double to a python floating point number) back into a python object */
-    return kMeans(data_points, initial_centroids, n, k, d, eps, max_iter);
+    points = PyToC(data_points, n, d);
+    centroids = PyToC(initial_centroids, n, d);
+    return CToPy(kMeans(points, centroids, n, k, d, eps, max_iter), n, d);
 }
 
 static PyObject* wam(PyObject *self, PyObject *args){
     PyObject *data_points; /* both in the format of long doubles list */
     int n, d;
+    double** points;
 
     if (!PyArg_ParseTuple(args, "Oii", &data_points, &n, &d)){
         return NULL; /*  NULL implies an error occured because it's not allowed for PyObject* to be NULL*/
     }
+
+    
     /* build the answer ("d" = convert a C double to a python floating point number) back into a python object */
-    return weightedAdjMat(data_points, n, d);
+    points = PyToC(data_points, n, d);
+    return CToPy(weightedAdjMat(points, n, d), n, d);
 }
 
 static PyObject* ddg(PyObject *self, PyObject *args){
     PyObject *data_points; /* both in the format of long doubles list */
     int n, d;
+    double** points;
 
     if (!PyArg_ParseTuple(args, "Oii", &data_points, &n, &d)){
         return NULL; /*  NULL implies an error occured because it's not allowed for PyObject* to be NULL*/
     }
     /* build the answer ("d" = convert a C double to a python floating point number) back into a python object */
-    return diagDegMat(data_points, n, d);
+    points = PyToC(data_points, n, d);
+    return CToPy(diagDegMat(points, n, d), n, d);
 }
 
 static PyObject* lnorm(PyObject *self, PyObject *args){
     PyObject *data_points; /* both in the format of long doubles list */
     int n, d;
+    double** points;
 
     if (!PyArg_ParseTuple(args, "Oii", &data_points, &n, &d)){
         return NULL; /*  NULL implies an error occured because it's not allowed for PyObject* to be NULL*/
     }
     /* build the answer ("d" = convert a C double to a python floating point number) back into a python object */
-    return normalGraphLap(data_points, n, d);
+    points = PyToC(data_points, n, d);
+    return CToPy(normalGraphLap(points, n, d), n, d);
 }
 
 static PyObject* jacobi(PyObject *self, PyObject *args){
     PyObject *sym_mat; /* both in the format of long doubles list */
     int n;
+    double** entries;
 
     if (!PyArg_ParseTuple(args, "Oi", &sym_mat, &n)){
         return NULL; /*  NULL implies an error occured because it's not allowed for PyObject* to be NULL*/
     }
     /* build the answer ("d" = convert a C double to a python floating point number) back into a python object */
-    return jacobian(sym_mat, n);
+    entries = PyToC(sym_mat, n, n);
+    return CToPy(jacobian(sym_mat, n), n, n);
 }
 
 static PyMethodDef capiMethods[] = {

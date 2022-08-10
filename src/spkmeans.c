@@ -22,14 +22,13 @@ static void calculateCentroids(int cluster_index, int d, double ***clusters, dou
 static void getPrevCentroids(int k, int d, double** centroids, double **getPrevCentroids);
 static double*** createClusters(int k, int d, int n);
 double ** matMultiply(double ** mat1, double ** mat2, int n);
-double ** processPyObject(PyObject* data_points, int n, int d);
-static PyObject *kMeans(PyObject *data_points, PyObject *initial_centroids, int n,int k,int d,double eps,int max_iter);
+static double** kMeans(double** data_points, double** initial_centroids, int n,int k,int d,double eps,int max_iter);
 double ** weightedAdjMatC(double** points, int n, int d);
-static PyObject *weightedAdjMat(PyObject *data_points, int n, int d);
+static  weightedAdjMat(double** data_points, int n, int d);
 double ** diagDegMatC(double** points, double** weights, int n, int d);
-static PyObject *diagDegMat(PyObject *data_points, int n, int d);
-static PyObject *normalGraphLap(PyObject *data_points, int n, int d);
-static PyObject *jacobian(PyObject *sym_max, int n);
+static double** diagDegMat(double** data_points, int n, int d);
+static double** normalGraphLap(double** data_points, int n, int d);
+static double** jacobian(double** sym_max, int n);
 
 void errorOccured() {
     printf("An Error Has Occured!");
@@ -200,33 +199,10 @@ double ** matMultiply(double ** mat1, double ** mat2, int n) {
     return multResult;
 }
 
-double ** processPyObject(PyObject *data_points, int n, int d) {
-    int i, j;
-    double **cPoints;
-    cPoints = (double **)calloc(n, sizeof(double *)); /*process data points in seperate function*/
-    if (cPoints == NULL){
-        errorOccured();
-    }
-    for (i = 0; i < n; i++){
-        cPoints[i] = (double *)calloc(d, sizeof(double));
-        if (cPoints[i] == NULL){
-            errorOccured();
-    }
-    }
-    for (i = 0; i < n; i++){
-        for (j = 0; j < d; j++){
-            cPoints[i][j]=PyFloat_AsDouble(PyList_GetItem(data_points, i*d + j));
-        }
-    } 
-    return cPoints;
-}
-
-static PyObject* kMeans(PyObject *data_points, PyObject *initial_centroids, int n, int k, int d, double eps, int max_iter){
+static double** kMeans(double** data_points, double** initial_centroids, int n, int k, int d, double eps, int max_iter){
     int i, j, iter;
     double **centroids, **prevCentroids;
     double *** clusters;
-    double ** cPoints = processPyObject(data_points, n, d);
-    PyObject *res;
     centroids = (double **)calloc(k, sizeof(double *));
     if (centroids == NULL){
         errorOccured();
@@ -263,17 +239,8 @@ static PyObject* kMeans(PyObject *data_points, PyObject *initial_centroids, int 
         updateCentroids(k, d, centroids, clusters);
         iter++;
     }
-    res = PyList_New(0);
-    PyObject *pylist;
-    for (i = 0; i < k; i++) {
-        pylist = PyList_New(0);
-        for (j = 0; j < d; j++) {
-            if (PyList_Append(pylist, PyFloat_FromDouble(centroids[i][j])) != 0)
-            return NULL;
-        }
-        if (PyList_Append(res, pylist) != 0)
-        return NULL;
-    }
+    return centroids;
+}
 
     emptyClusters(k, clusters);
     emptyCentroids(k, centroids);
@@ -308,22 +275,9 @@ double ** weightedAdjMatC(double** points, int n, int d) {
     return mat;
 }
  
-static PyObject* weightedAdjMat(PyObject *data_points, int n, int d){ /*wam */
+static double** weightedAdjMat(double** data_points, int n, int d){ /*wam */
     int i, j;
-    double ** points = processPyObject(data_points, n, d);
     double ** mat = weightedAdjMatC(points, n, d);
-    PyObject * res;
-    res = PyList_New(0);
-    PyObject *pylist;
-    for (i = 0; i < n; i++) {
-        pylist = PyList_New(0);
-        for (j = 0; j < d; j++) {
-            if (PyList_Append(pylist, PyFloat_FromDouble(mat[i][j])) != 0)
-            return NULL;
-        }
-        if (PyList_Append(res, pylist) != 0)
-        return NULL;
-    }
     return res;
 }
 
@@ -346,30 +300,16 @@ double ** diagDegMatC(double** points, double ** weights, int n, int d) {
     return mat;
 }
  
-static PyObject* diagDegMat(PyObject *data_points, int n, int d) { /* ddg */
+static double** diagDegMat(double** data_points, int n, int d) { /* ddg */
     int i, j;
-    double ** points = processPyObject(data_points, n, d);
     double ** weights = weightedAdjMatC(points, n, d);
     double** mat = diagDegMatC(points, weights, n, d);
-    PyObject * res;
-    res = PyList_New(0);
-    PyObject *pylist;
-    for (i = 0; i < n; i++) {
-        pylist = PyList_New(0);
-        for (j = 0; j < d; j++) {
-            if (PyList_Append(pylist, PyFloat_FromDouble(mat[i][j])) != 0)
-            return NULL;
-        }
-        if (PyList_Append(res, pylist) != 0)
-        return NULL;
-    }
     return res;
 }
 
-static PyObject* normalGraphLap(PyObject *data_points, int n, int d) { /* lnorm */
+static double** normalGraphLap(double** data_points, int n, int d) { /* lnorm */
     double ** multiplied;
     int i, j;
-    double ** points = processPyObject(data_points, n, d);
     double ** weights = weightedAdjMatC(points, n, d);
     double ** diagmat = diagDegMatC(points, weights, n, d);
     double ** diagmatnew = (double**)calloc(n, sizeof(double*));
@@ -397,22 +337,9 @@ static PyObject* normalGraphLap(PyObject *data_points, int n, int d) { /* lnorm 
             }
         }
     }
-    PyObject * res;
-    res = PyList_New(0);
-    PyObject *pylist;
-    for (i = 0; i < n; i++) {
-        pylist = PyList_New(0);
-        for (j = 0; j < d; j++) {
-            if (PyList_Append(pylist, PyFloat_FromDouble(mat[i][j])) != 0)
-            return NULL;
-        }
-        if (PyList_Append(res, pylist) != 0)
-        return NULL;
-    }
     return res;
 }
 
-static PyObject *jacobian(PyObject *sym_max, int n) {
-    return PyList_New(0);
-}
+/*static PyObject *jacobian(PyObject *sym_max, int n) {
 
+}*/
