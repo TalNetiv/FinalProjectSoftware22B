@@ -24,6 +24,11 @@ static void calculateCentroids(int cluster_index, int d, double ***clusters, dou
 static void getPrevCentroids(int k, int d, double** centroids, double **getPrevCentroids);
 static double*** createClusters(int k, int d, int n);
 static double** matMultiply(double ** mat1, double ** mat2, int n);
+static int* findGreatestValue(double** mat, int n);
+static int isMatDiag(double** mat, int n);
+static double off(double** mat, int n);
+static double* obtainVariables(double** mat, int n, int row, int col);
+static double** createRotMat(int n, double c, double s, int row, int col);
 static double** kMeans(double** points, double** initial_centroids, int n, int k, int d);
 static  double** weightedAdjMat(double** data_points, int n, int d);
 static double** diagDegMat(double** data_points, int n, int d);
@@ -258,6 +263,76 @@ double ** matMultiply(double ** mat1, double ** mat2, int n) {
     return multResult;
 }
 
+static int* findGreatestValue(double** mat, int n) {
+    int i, j, row, col;
+    double maxval = 0;
+    for (i = 1; i < n; i++) {
+        for (j = i; j < n; j++) {
+            if (abs(mat[i][j]) > maxval) {
+                maxval = abs(mat[i][j]);
+                row = i;
+                col = j;
+            }
+        }
+    }
+    int* entry = {row, col};
+    return entry;
+}
+
+static int isMatDiag(double** mat, int n) {
+    int i, j;
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) {
+            if (i != j && mat[i][j] != 0) {
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+
+static double off(double** mat, int n) {
+    int i, j;
+    double sum;
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) {
+            if (i != j) {
+                sum += pow(mat[i][j], 2);
+            }
+        }
+    }
+    return sum;
+}
+
+static double* obtainVariables(double** mat, int n, int row, int col) {
+    double theta, c, t;
+    double* variables = (double*)calloc(3, sizeof(double));
+    int sign;
+    if (variables == NULL) {errorOccured();}
+    theta = (mat[row][row]-mat[col][col])/(2*mat[row][col]);
+    variables[0] = theta;
+    if (sign < 0) {sign = -1;}
+    else {sign = 1;}
+    t = sign/(abs(theta)+sqrt(pow(theta, 2)+1));
+    variables[1] = t;
+    c = 1/(sqrt(pow(t, 2)+1));
+    variables[2] = c;
+    return variables;
+}
+
+static double** createRotMat(int n, double c, double s, int row, int col) {
+    int i, j;
+    double** P = initializeMat(n, n);
+    for (i = 0; i < n; i++) {
+        P[i][i] = 1;
+    }
+    P[row][row] = c;
+    P[col][col] = c;
+    P[row][col] = s;
+    P[col][row] = -s;
+    return P;
+}
+
 static double** kMeans(double** points, double** initial_centroids, int n, int k, int d){
     int iter;
     double **centroids, **prevCentroids;
@@ -344,9 +419,37 @@ static double** normalGraphLap(double** points, int n, int d) { /* lnorm */
     return mat;
 }
 
-/*static PyObject *jacobian(PyObject *sym_max, int n) {
+static double** jacobian(double** A, int n) {
+    int i, j, iter, piv_row, piv_col;
+    double phi, c, s;
+    double* variables;
+    double** Atag, **pivot, **P, **Ptranspose;
+    double eps = 1.0*pow(10, -5);
+    Atag = A;
+    do { 
+        iter++;
+        A = Atag;
+        pivot = findGreatestValue(A,n);
+        piv_row = pivot[0];
+        piv_col = pivot[1];
+        variables = obtainVariables(A, n, piv_row, piv_col);
+        phi = 1/(2*tan(1/variables[0]));
+        c = variables[2];
+        s = c*variables[1];
+        P = createRotMat(n, c, s, piv_row, piv_col);
+        Ptranspose = initializeMat(n, n);
+        for (i = 0; i < n; i++) {
+            for (j = 0; j < n; j++) {
+                Ptranspose[j][i] = P[i][j];
+            }
+        }
+        Atag = matMultiply(matMultiply(Ptranspose, A, n), P, n);
+        if (isMatDiag(Atag, n) == 1) {
+            break;
+        }
+    } while ((off(A, n) - off(Atag, n) > eps) && iter < 100);
 
-}*/
+}
 
 int main(int argc, char *argv[]){
 
