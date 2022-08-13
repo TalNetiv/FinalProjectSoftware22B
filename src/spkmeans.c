@@ -90,16 +90,14 @@ static double ** readFromFile(char* fileName){
 }
 
 static void printMat(double** mat, int n){
-    int rows, columns;
- 	for(rows = 0; rows < n; rows++)
-  	{
-        printf("row num: %d  " , rows); /* delete on submission !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-  		for(columns = 0; columns < n; columns++)
-  		{
-  			if (columns == n - 1){
-                printf("%.4f \n" , mat[rows][columns]);
+    int i, j;
+ 	for(i = 0; i < n; i++) {
+        printf("row num: %d  " , i); /* delete on submission !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+  		for(j = 0; j < n; j++) {
+  			if (j == n-1){
+                printf("%.4f \n" , mat[i][j]);
             } else{
-                printf("%.4f,", mat[rows][columns]);
+                printf("%.4f,", mat[i][j]);
             }
 		}
   	}  	
@@ -267,13 +265,17 @@ static int* findGreatestValue(double** mat, int n) {
     int i, j, row, col;
     double maxval = 0;
     for (i = 1; i < n; i++) {
-        for (j = i; j < n; j++) {
+        for (j = i+1; j < n; j++) {
             if (abs(mat[i][j]) > maxval) {
                 maxval = abs(mat[i][j]);
                 row = i;
                 col = j;
             }
         }
+    }
+    if (maxval == 0) {
+        row = 0;
+        col = 1;
     }
     int* entry = {row, col};
     return entry;
@@ -306,12 +308,12 @@ static double off(double** mat, int n) {
 
 static double* obtainVariables(double** mat, int n, int row, int col) {
     double theta, c, t;
-    double* variables = (double*)calloc(3, sizeof(double));
     int sign;
+    double* variables = (double*)calloc(3, sizeof(double));
     if (variables == NULL) {errorOccured();}
-    theta = (mat[row][row]-mat[col][col])/(2*mat[row][col]);
+    theta = (mat[col][col]-mat[row][row])/(2*mat[row][col]);
     variables[0] = theta;
-    if (sign < 0) {sign = -1;}
+    if (theta < 0) {sign = -1;}
     else {sign = 1;}
     t = sign/(abs(theta)+sqrt(pow(theta, 2)+1));
     variables[1] = t;
@@ -420,11 +422,12 @@ static double** normalGraphLap(double** points, int n, int d) { /* lnorm */
 }
 
 static double** jacobian(double** A, int n) {
-    int i, j, iter, piv_row, piv_col;
-    double phi, c, s;
+    int i, j, piv_row, piv_col;
+    double phi, c, s, temp;
     double* variables;
-    double** Atag, **pivot, **P, **Ptranspose;
+    double** Atag, **pivot, **P, **Ptranspose, **V, **mat;
     double eps = 1.0*pow(10, -5);
+    int iter = 0;
     Atag = A;
     do { 
         iter++;
@@ -437,26 +440,38 @@ static double** jacobian(double** A, int n) {
         c = variables[2];
         s = c*variables[1];
         P = createRotMat(n, c, s, piv_row, piv_col);
+        if (iter == 1) {V = P; }
+        else {V = matMultiply(V, P, n); }
         Ptranspose = initializeMat(n, n);
         for (i = 0; i < n; i++) {
-            for (j = 0; j < n; j++) {
-                Ptranspose[j][i] = P[i][j];
+            for (j = i; j < n; j++) {
+                temp = Ptranspose[i][j];
+                Ptranspose[i][j] = Ptranspose[j][i];
+                Ptranspose[j][i] = temp;
             }
         }
         Atag = matMultiply(matMultiply(Ptranspose, A, n), P, n);
         if (isMatDiag(Atag, n) == 1) {
             break;
         }
-    } while ((off(A, n) - off(Atag, n) > eps) && iter < 100);
+    } while ((off(A, n) - off(Atag, n) >= eps) && iter < 100);
+    mat = initializeMat(n+1, n);
+    for (j = 0; j < n; j++) {
+        mat[0][j] = Atag[j][j];
+    }
+    for (i = 1; i < n; i++) {
+        for (j = 0; j < n; j++) {
+            mat[i][j] = V[i-1][j];
+        }
+    }
+    return mat;
 
 }
 
 int main(int argc, char *argv[]){
-
     double **points, **mat;
     char *goal = argv[1];
     char *fileName = argv[2];
-
     if (argc != 3){ 
         printf("Invalid Input!Main");
         exit(1);
@@ -465,11 +480,7 @@ int main(int argc, char *argv[]){
         printf("Invalid Input!Main");
         exit(1);
     }
-
-    printf("go read from file");
     points = readFromFile(fileName);
-    printf("done reading from file\n");
-
  /*   if (strcmp(goal, "jacobi") == 0){  ###add free mat func
         res = initializeMat(n+1, n);
         res = jacobi(points);
@@ -479,7 +490,6 @@ int main(int argc, char *argv[]){
         return 0;
     } */
     mat = initializeMat(n, n);
-    printf("ken");
     if (strcmp(goal, "wam") == 0){
         mat = weightedAdjMat(points, n, d);
     }
@@ -489,8 +499,8 @@ int main(int argc, char *argv[]){
     if (strcmp(goal, "lnorm") == 0){
         mat = normalGraphLap(points, n, d);
     }
-    if (strcmp(goal, "charta") == 0){
-        mat = kMeans(mat, mat, 1,1,1);
+    if (strcmp(goal, "jacobian") == 0){
+        mat = jacobian(mat, n);
     }
     /* add free to matrices here */
     printMat(mat, n);
