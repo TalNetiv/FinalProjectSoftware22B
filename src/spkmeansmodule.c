@@ -106,7 +106,7 @@ static PyObject* jacobi(PyObject *self, PyObject *args){
     }
     /* build the answer ("d" = convert a C double to a python floating point number) back into a python object */
     entries = PyToC(sym_mat, n, n);
-    return CToPy(jacobian(sym_mat, n), n, n);
+    return CToPy(jacobian(entries, n), n, n);
 }
 
 static PyMethodDef capiMethods[] = {
