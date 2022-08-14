@@ -30,9 +30,9 @@ static double off(double** mat, int n);
 static double* obtainVariables(double** mat, int row, int col);
 static double** createRotMat(int n, double c, double s, int row, int col);
 static double** kMeans(double** points, double** initial_centroids, int n, int k, int d);
-static double** weightedAdjMat(double** data_points, int n, int d);
-static double** diagDegMat(double** data_points, int n, int d);
-static double** normalGraphLap(double** data_points, int n, int d);
+static double** weightedAdjMat(double** points, int n, int d);
+static double** diagDegMat(double** points, int n, int d);
+static double** normalGraphLap(double** points, int n, int d);
 static double** jacobian(double** A, int n);
 
 static void errorOccured() {
@@ -40,6 +40,7 @@ static void errorOccured() {
     exit(1);
 }
 
+/* A function that allocates space for an nxd matrix */
 static double ** initializeMat(int n, int d){
     int i;
     double ** mat = (double**)calloc(n, sizeof(double*));
@@ -64,7 +65,7 @@ static double ** readFromFile(char* fileName){
     c = fgetc(ifp);
     while (c !='\n'){
         if (c == ','){
-            d++;
+            d++; /* d is the amount of entries each data point has */
         }
         c = fgetc(ifp);
     }
