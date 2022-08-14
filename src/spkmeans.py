@@ -67,7 +67,6 @@ def renormalize(U, n, k):
     return T
 
 def initialPoints(data_points,k,n,d):
-    np.random.seed(0)
     c = np.random.choice(n) #choose a random first centroid
     initial_indices = [c]
     initial_centroids = np.zeros((1,d)) + data_points[c]
@@ -81,9 +80,20 @@ def initialPoints(data_points,k,n,d):
         initial_centroids = np.vstack([initial_centroids, data_points[c]])
     return (initial_indices, initial_centroids)
 
-# def printMatrix(mat): #print initial indexes and centroids
-#     for  in mat:
-#         print("".join("%.4f," %s for s in ??id)[:-1])
+def printMatrix(mat): #print initial indexes and centroids
+    for point in mat:
+        print("".join("%.4f," %s for s in point)[:-1])
+
+def printJacobi(mat):
+    print("".join("%.4f," %f for f in mat[0]).strip(","))
+    for point in mat[1:]:
+        print("".join("%.4f," %s for s in point)[:-1])
+
+def printKmeans(final_centroids, initial_indices): #print initial indexes and centroids
+    print("".join("%d," %f for f in initial_indices).strip(","))
+    for centroid in final_centroids:
+        print("".join("%.4f," %s for s in centroid)[:-1])
+
 
 
 def main(k, goal, filename):
@@ -101,23 +111,22 @@ def main(k, goal, filename):
     if goal == goals.WAM.value:
         points = createListForC(data_points)
         weightedMat = spkmodule.wam(points, n, d)
-        print(weightedMat) #we need to print it in the right way lol
+        printMatrix(weightedMat) #we need to print it in the right way lol
 
     elif goal == goals.DDG.value:
         points = createListForC(data_points)
         diagMat = spkmodule.ddg(points, n, d)
-        print(diagMat)
+        printMatrix(diagMat)
 
     elif goal == goals.LNORM.value:
         points = createListForC(data_points)
         lapNorm = spkmodule.lnorm(points, n, d)
-        print(lapNorm)
+        printMatrix(lapNorm)
 
     elif goal == goals.JACOBI.value:
         points = createListForC(sym_mat)
         jac = spkmodule.jacobi(points, n)
-        #how to send the matrix to C?
-        pass
+        printJacobi(jac)
 
     elif goal == goals.SPK.value:
         try:
@@ -139,7 +148,7 @@ def main(k, goal, filename):
         c_points = createListForC(T_points)
         c_centroids = createListForC(initial_centroids)
         final_centroids = spkmodule.spk(c_points, c_centroids, n, k, d)
-        print(initial_indices, final_centroids)
+        printKmeans(initial_indices, final_centroids)
 
     else:
         print("Invalid Input! from big else")
@@ -148,5 +157,6 @@ def main(k, goal, filename):
 
 
 checkInput(sys.argv)
+np.random.seed(0)
 main(int(sys.argv[1]), sys.argv[2], sys.argv[3])
     

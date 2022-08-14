@@ -36,7 +36,7 @@ static double** normalGraphLap(double** points, int n, int d);
 static double** jacobian(double** A, int n);
 
 static void errorOccured() {
-    printf("An Error Has Occured!");
+    printf("An Error Has Occured");
     exit(1);
 }
 
