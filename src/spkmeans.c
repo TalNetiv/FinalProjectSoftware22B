@@ -10,7 +10,7 @@ static void errorOccured();
 static double ** initializeMat(int n, int d);
 static double ** readFromFile(char* fileName);
 static void printMat(double** mat, int n, int d);
-static void emptyCentroids(int k, double** centroids);
+static void emptyMatrix(int k, double** matrix);
 static void emptyClusters(int k, double ***clusters);
 static void addVectors(double *vectorA, double *vectorB, int d);
 static void distribute(int n, int k, int d, double*** clusters, double **cPoints, double **centroids);
@@ -72,7 +72,7 @@ static double ** readFromFile(char* fileName){
     d++;
     while (c != EOF){
         if (c == '\n'){
-        n++;
+        n++; /* n is the amount of data points */
         }
         c = fgetc(ifp);
     }
@@ -91,7 +91,7 @@ static double ** readFromFile(char* fileName){
 static void printMat(double** mat, int n, int d){
     int i, j;
  	for (i = 0; i < n; i++) {
-        printf("row num: %d  " , i); /* TODO: delete on submisson !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+        printf("row num: %d  " , i); /* TODO: delete on submisson!!!! */
   		for (j = 0; j < d; j++) {
   			if (j == d-1){
                 printf("%.4f \n" , mat[i][j]);
@@ -102,12 +102,12 @@ static void printMat(double** mat, int n, int d){
   	}  	
 }
 
-static void emptyCentroids(int k, double **centroids) {
+static void emptyMatrix(int k, double **matrix) {
     int i;
     for (i = 0; i < k; i++) {
-        free(centroids[i]);
+        free(matrix[i]);
     }
-    free(centroids);
+    free(matrix);
 }
 
 static void emptyClusters(int k, double ***clusters){
@@ -174,6 +174,7 @@ static int bestCluster(int point_index, int k, int d, double **cPoints, double *
     return best_index;
 }
 
+/* this function checks if the kmeans convergence condition has been reached */
 static int convergentTrue(double ** curr, double ** prev, int d, int k){
     int i;
     double eucdist;
@@ -210,7 +211,8 @@ static void calculateCentroids(int cluster_index, int d, double ***clusters, dou
     for (i = 0; i < d; i++){
         if (l != 0){
             centroid[i] = centroid[i] / l;
-    }   }
+        }   
+    }
 }
 
 static void getPrevCentroids(int k, int d, double** centroids, double **prevCentroids){
@@ -260,6 +262,8 @@ double ** matMultiply(double ** mat1, double ** mat2, int n) {
     return multResult;
 }
 
+/* This function returns the row and the column of the greastest entry (in absolute value) 
+in the off-diagonal part of a matrix */
 static int* findGreatestValue(double** mat, int n) {
     int i, j;
     double maxval = 0;
@@ -278,7 +282,6 @@ static int* findGreatestValue(double** mat, int n) {
         entry[0] = 0;
         entry[1] = 1;
     }
-    printf("maxval is %f\n", maxval);
     return entry;
 }
 
@@ -307,6 +310,8 @@ static double off(double** mat, int n) {
     return sum;
 }
 
+/* Using the definitions of theta, t and c in the Obtain section
+to find them using the greatest entry of the matrix */
 static double* obtainVariables(double** mat, int row, int col) {
     double theta, c, t;
     int sign;
@@ -363,9 +368,9 @@ static double** kMeans(double** points, double** initial_centroids, int n, int k
         iter++;
     }
     emptyClusters(k, clusters);
-    emptyCentroids(k, centroids);
-    emptyCentroids(k, prevCentroids);
-    emptyCentroids(n, points);
+    emptyMatrix(k, centroids); /* Does this make sense??? We copied it from our HW */
+    emptyMatrix(k, prevCentroids);
+    emptyMatrix(n, points);
     return centroids;
 }
 
@@ -488,6 +493,7 @@ int main(int argc, char *argv[]){
         mat = initializeMat(n+1, n);
         mat = jacobian(points, n);
         printMat(mat, n+1, n);
+        emptyMatrix(n+1, mat);
         return 0;
     }
     mat = initializeMat(n, n);
@@ -505,5 +511,6 @@ int main(int argc, char *argv[]){
     } 
     /* add free to matrices here */
     printMat(mat, n, n);
+    emptyMatrix(n, mat);
     return 0; 
 }
