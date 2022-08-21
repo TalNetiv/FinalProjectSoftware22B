@@ -51,8 +51,8 @@ static PyObject* spk(PyObject *self, PyObject *args){
     }
     /* build the answer ("d" = convert a C double to a python floating point number) back into a python object */
     points = PyToC(data_points, n, d);
-    centroids = PyToC(initial_centroids, n, d);
-    return CToPy(kMeans(points, centroids, n, k, d), n, d);
+    centroids = PyToC(initial_centroids, k, d);
+    return CToPy(kMeans(points, centroids, n, k, d), k, d);
 }
 
 static PyObject* wam(PyObject *self, PyObject *args){
@@ -67,7 +67,7 @@ static PyObject* wam(PyObject *self, PyObject *args){
     
     /* build the answer ("d" = convert a C double to a python floating point number) back into a python object */
     points = PyToC(data_points, n, d);
-    return CToPy(weightedAdjMat(points, n, d), n, d);
+    return CToPy(weightedAdjMat(points, n, d), n, n);
 }
 
 static PyObject* ddg(PyObject *self, PyObject *args){
@@ -80,7 +80,7 @@ static PyObject* ddg(PyObject *self, PyObject *args){
     }
     /* build the answer ("d" = convert a C double to a python floating point number) back into a python object */
     points = PyToC(data_points, n, d);
-    return CToPy(diagDegMat(points, n, d), n, d);
+    return CToPy(diagDegMat(points, n, d), n, n);
 }
 
 static PyObject* lnorm(PyObject *self, PyObject *args){
@@ -93,7 +93,7 @@ static PyObject* lnorm(PyObject *self, PyObject *args){
     }
     /* build the answer ("d" = convert a C double to a python floating point number) back into a python object */
     points = PyToC(data_points, n, d);
-    return CToPy(normalGraphLap(points, n, d), n, d);
+    return CToPy(normalGraphLap(points, n, d), n, n);
 }
 
 static PyObject* jacobi(PyObject *self, PyObject *args){

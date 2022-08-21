@@ -203,7 +203,7 @@ static void calculateCentroids(int cluster_index, int d, double ***clusters, dou
     for (p = 0; p < d; p++){
         centroid[p] = 0;
     }
-    while (isVectorZero(clusters[cluster_index][vector_index], d) != 1){
+    while (isVectorZero(clusters[cluster_index][vector_index], d) != 1 && vector_index < n){
         addVectors(clusters[cluster_index][vector_index], centroid, d);
         l++;
         vector_index++;

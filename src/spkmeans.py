@@ -20,16 +20,17 @@ def checkInput(input):
         print("Invalid Input! in check input") ##fix comment later
         sys.exit(1)
 
-def createListForC(points):
-    points = [i.tolist() for i in points]
+def createListForC(points, numpy=True):
+    if numpy:
+        points = [i.tolist() for i in points]
     c_points = []
     for i in points: #convert all data points to one long list of floats
         for j in i:
             c_points.append(j)
-    return c_points 
+    return c_points
 
 def reorderEigen(eigens, n):
-    mat = [[] for i in range(n+1)]
+    mat = [[0 for m in range(n+1)] for i in range(n+1)]
     j = 0
     while (j < n):
         eigenvals = eigens[0]
@@ -37,7 +38,7 @@ def reorderEigen(eigens, n):
         maxi_ind = eigenvals.index(maxi)
         for k in range(n+1):
             mat[k][j] = eigens[k][maxi_ind]
-        eigenvals[0][maxi_ind] = sys.MIN_SIZE
+        eigenvals[maxi_ind] = -math.inf
         j += 1
     return mat
 
@@ -57,19 +58,20 @@ def kGreatestCols(eigens, n, k):
     return mat
 
 def renormalize(U, n, k):
-    T = [[] for i in range(n)]
-    for i in range(n):
+    T = [[0 for m in range(k)] for l in range(n)]
+    for i in range(len(U)):
         sum = 0
-        for j in range(k):
-            sum += (U[i][j])**2
-        for j in range(k):
-            if (sum == 0):
-                print("Special case where sum =0, forum instructions ordered to ignore") #TODO remove before submission
-            T[i][j] = (U[i][j])/((sum)**(0.5))
+        for j in range(len(U[0])):
+            sum += math.pow((U[i][j]),2)
+        if (math.pow(sum, 0.5) == 0):
+            # print("Special case where sum =0, forum instructions ordered to ignore") #TODO remove before submission
+            continue
+        for j in range(len(U[0])):
+            T[i][j] = (U[i][j])/(math.pow(sum, 0.5))
     return T
 
-def initialPoints(data_points,k,n,d):
-    c = np.random.choice(n) #choose a random first centroid
+def initialPoints(data_points, k, n, d):
+    c = np.random.choice(n-1) #choose a random first centroid
     initial_indices = [c]
     initial_centroids = np.zeros((1,d)) + data_points[c]
     distance_table = np.full((2,n), math.inf) #initialize a 2 columns, N rows table
@@ -80,7 +82,7 @@ def initialPoints(data_points,k,n,d):
         c = np.random.choice(n, p=distance_table[1])
         initial_indices.append(c)
         initial_centroids = np.vstack([initial_centroids, data_points[c]])
-    return (initial_indices, initial_centroids)
+    return (initial_indices, initial_centroids.tolist())
 
 def printMatrix(mat): #print initial indexes and centroids
     for point in mat:
@@ -91,7 +93,7 @@ def printJacobi(mat):
     for point in mat[1:]:
         print("".join("%.4f," %s for s in point)[:-1])
 
-def printKmeans(final_centroids, initial_indices): #print initial indexes and centroids
+def printKmeans(initial_indices, final_centroids): #print initial indexes and centroids
     print("".join("%d," %f for f in initial_indices).strip(","))
     for centroid in final_centroids:
         print("".join("%.4f," %s for s in centroid)[:-1])
@@ -108,12 +110,11 @@ def main(k, goal, filename):
         n = len(data_points)
         d = len(data_points.columns)
         data_points = data_points.to_numpy()
-        print(data_points)
 
     if goal == goals.WAM.value:
         points = createListForC(data_points)
         weightedMat = spkmodule.wam(points, n, d)
-        printMatrix(weightedMat) #we need to print it in the right way lol
+        printMatrix(weightedMat)
 
     elif goal == goals.DDG.value:
         points = createListForC(data_points)
@@ -134,26 +135,24 @@ def main(k, goal, filename):
         try:
             assert (k < n and k >= 0)
         except:
-            print("Invalid Input!fr")
+            print("Invalid Input!")
             exit(1)
-        mat = createListForC(points)
-        lapNorm = spkmodule.lnorm(mat, n, d)
-        eigen = spkmodule.jacobi(lapNorm, n)
-        orderedEigen = reorderEigen(eigen, n)
+        points = createListForC(data_points)
+        lapNorm = spkmodule.lnorm(points, n, d)
+        eigens = spkmodule.jacobi(createListForC(lapNorm, False), n)
+        orderedEigen = reorderEigen(eigens, n)
         if k == 0:
-            k = eigengap(orderedEigen[0], n)
+            k = math.ceil(eigengap(orderedEigen[0], n))
         U = kGreatestCols(orderedEigen[1:], n, k)
         T = renormalize(U, n, k)
-        #now we need to create T_points as data points for kmeans somehow
-        T_points = T
-        (initial_indices, initial_centroids) = initialPoints(T_points, k, n, d)
-        c_points = createListForC(T_points)
-        c_centroids = createListForC(initial_centroids)
-        final_centroids = spkmodule.spk(c_points, c_centroids, n, k, d)
+        (initial_indices, initial_centroids) = initialPoints(T, k, len(T), len(T[0]))
+        c_points = createListForC(T, False)
+        c_centroids = createListForC(initial_centroids, False)
+        final_centroids = spkmodule.spk(c_points, c_centroids, len(T), k, len(T[0]))
+        print("\n~~~final result~~~\n")
         printKmeans(initial_indices, final_centroids)
-
     else:
-        print("Invalid Input! from big else")
+        print("Invalid Input!")
         exit(1)
     
 
