@@ -63,6 +63,8 @@ def renormalize(U, n, k):
         for j in range(k):
             sum += (U[i][j])**2
         for j in range(k):
+            if (sum == 0):
+                print("Special case where sum =0, forum instructions ordered to ignore") #TODO remove before submission
             T[i][j] = (U[i][j])/((sum)**(0.5))
     return T
 
