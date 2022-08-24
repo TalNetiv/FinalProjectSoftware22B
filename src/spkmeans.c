@@ -152,7 +152,7 @@ static void insertToCluster(double ** cluster, double *vector, int d){
 static int isVectorZero(double *vector, int d){
     int j;
     for (j = 0; j < d; j++){
-        if (vector[j] != 0){
+        if (vector[j] != -210496){
             return 0;
         }
     }
@@ -162,7 +162,7 @@ static int isVectorZero(double *vector, int d){
 static int bestCluster(int point_index, int k, int d, double **cPoints, double **centroids){
     int m;
     int best_index = 0;
-    double best_dist = pow(2,15);
+    double best_dist = pow(2,20);
     double curr_dist;
     for (m = 0; m < k; m++){
         curr_dist = euclideanDistance(cPoints[point_index], centroids[m], d);
@@ -203,7 +203,7 @@ static void calculateCentroids(int cluster_index, int d, double ***clusters, dou
     for (p = 0; p < d; p++){
         centroid[p] = 0;
     }
-    while (isVectorZero(clusters[cluster_index][vector_index], d) != 1 && vector_index < n){
+    while (isVectorZero(clusters[cluster_index][vector_index], d) != 1){
         addVectors(clusters[cluster_index][vector_index], centroid, d);
         l++;
         vector_index++;
@@ -225,7 +225,7 @@ static void getPrevCentroids(int k, int d, double** centroids, double **prevCent
 }
 
 static double*** createClusters(int k, int d, int n){
-    int i, j;
+    int i, j, l;
     double*** new_clusters;
     new_clusters = (double***)calloc(k, sizeof(double **));
     if (new_clusters == NULL){
@@ -240,6 +240,10 @@ static double*** createClusters(int k, int d, int n){
             new_clusters[i][j] = (double *)calloc(d, sizeof(double));
             if (new_clusters[i][j] == NULL) {
                 errorOccured();
+            }
+            for (l=0; l<d; l++){
+                new_clusters[i][j][l] = -210496;
+                
             }
         }
     }
@@ -348,11 +352,16 @@ static double** createRotMat(int n, double c, double s, int row, int col) {
 }
 
 static double** kMeans(double** points, double** initial_centroids, int n, int k, int d){
-    int iter;
+    int iter, i, j;
     double **centroids, **prevCentroids;
     double *** clusters;
     centroids = initializeMat(k, d);
-    centroids = initial_centroids;
+    for (i=0; i<k; i++){
+        for (j=0; j<d; j++){
+            centroids[i][j]=initial_centroids[i][j];
+        }
+    }
+ /*   centroids = initial_centroids; */
     prevCentroids = initializeMat(k, d);
     getPrevCentroids(k, d, centroids, prevCentroids);
     clusters = createClusters(k, d, n);
@@ -367,10 +376,10 @@ static double** kMeans(double** points, double** initial_centroids, int n, int k
         updateCentroids(k, d, centroids, clusters);
         iter++;
     }
-    emptyClusters(k, clusters);
-    emptyMatrix(k, centroids); /* Does this make sense??? We copied it from our HW */
+/*    emptyClusters(k, clusters);
+    emptyMatrix(k, centroids); /* Does this make sense??? We copied it from our HW
     emptyMatrix(k, prevCentroids);
-    emptyMatrix(n, points);
+    emptyMatrix(n, points); */
     return centroids;
 }
 

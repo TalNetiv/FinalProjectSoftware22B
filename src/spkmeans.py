@@ -30,7 +30,7 @@ def createListForC(points, numpy=True):
     return c_points
 
 def reorderEigen(eigens, n):
-    mat = [[0 for m in range(n+1)] for i in range(n+1)]
+    mat = [[0 for m in range(n)] for i in range(n+1)]
     j = 0
     while (j < n):
         eigenvals = eigens[0]
@@ -43,11 +43,13 @@ def reorderEigen(eigens, n):
     return mat
 
 def eigengap(mat, n):
+    max_gap = 0
     k = 0
-    for i in range(1,n):
-        currgap = abs(mat[i-1]-mat[i])
-        if currgap > k:
-            k = currgap
+    for i in range(n//2):
+        currgap = abs(mat[i+1]-mat[i])
+        if currgap > max_gap:
+            max_gap = currgap
+            k = i + 1
     return k
 
 def kGreatestCols(eigens, n, k):
@@ -142,10 +144,14 @@ def main(k, goal, filename):
         eigens = spkmodule.jacobi(createListForC(lapNorm, False), n)
         orderedEigen = reorderEigen(eigens, n)
         if k == 0:
-            k = math.ceil(eigengap(orderedEigen[0], n))
+            k = eigengap(orderedEigen[0], n)
         U = kGreatestCols(orderedEigen[1:], n, k)
         T = renormalize(U, n, k)
         (initial_indices, initial_centroids) = initialPoints(T, k, len(T), len(T[0]))
+        if (k == 1):
+            print("\n~~~final result~~~\n")
+            printKmeans(initial_indices, initial_centroids)
+            exit(0)
         c_points = createListForC(T, False)
         c_centroids = createListForC(initial_centroids, False)
         final_centroids = spkmodule.spk(c_points, c_centroids, len(T), k, len(T[0]))
