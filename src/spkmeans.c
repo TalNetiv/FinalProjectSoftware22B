@@ -94,7 +94,7 @@ static void printMat(double** mat, int n, int d){
         printf("row num: %d  " , i); /* TODO: delete on submisson!!!! */
   		for (j = 0; j < d; j++) {
   			if (j == d-1){
-                printf("%.4f \n" , mat[i][j]);
+                printf("%.4f\n" , mat[i][j]);
             } else {
                 printf("%.4f,", mat[i][j]);
             }
@@ -377,7 +377,7 @@ static double** kMeans(double** points, double** initial_centroids, int n, int k
         iter++;
     }
 /*    emptyClusters(k, clusters);
-    emptyMatrix(k, centroids); /* Does this make sense??? We copied it from our HW
+    emptyMatrix(k, centroids); Does this make sense??? We copied it from our HW
     emptyMatrix(k, prevCentroids);
     emptyMatrix(n, points); */
     return centroids;
@@ -450,7 +450,7 @@ static double** jacobian(double** A, int n) { /* TODO: add special treatment for
     int* pivot;
     int iter = 0;
     Atag = A;
-    while (iter < 100) {
+    while (iter <= 100) {
         iter++;
         A = Atag;
         pivot = findGreatestValue(A,n);
@@ -490,7 +490,7 @@ int main(int argc, char *argv[]){
     char *goal = argv[1];
     char *fileName = argv[2];
     if (argc != 3){ 
-        printf("Invalid Input!Main");
+        printf("Invalid Input");
         exit(1);
     }
     if ( (strcmp(goal, "wam") != 0) && (strcmp(goal, "ddg") != 0) && (strcmp(goal, "lnorm") != 0) && (strcmp(goal, "jacobi") != 0) ){ 

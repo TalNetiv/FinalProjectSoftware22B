@@ -17,7 +17,7 @@ def checkInput(input):
         assert(len(input) == 4)
         assert input[1].isnumeric()
     except:
-        print("Invalid Input! in check input") ##fix comment later
+        print("Invalid Input!") ##fix comment later
         sys.exit(1)
 
 def createListForC(points, numpy=True):
@@ -149,13 +149,13 @@ def main(k, goal, filename):
         T = renormalize(U, n, k)
         (initial_indices, initial_centroids) = initialPoints(T, k, len(T), len(T[0]))
         if (k == 1):
-            print("\n~~~final result~~~\n")
+            # print("\n~~~final result~~~\n")
             printKmeans(initial_indices, initial_centroids)
             exit(0)
         c_points = createListForC(T, False)
         c_centroids = createListForC(initial_centroids, False)
         final_centroids = spkmodule.spk(c_points, c_centroids, len(T), k, len(T[0]))
-        print("\n~~~final result~~~\n")
+        # print("\n~~~final result~~~\n")
         printKmeans(initial_indices, final_centroids)
     else:
         print("Invalid Input!")
