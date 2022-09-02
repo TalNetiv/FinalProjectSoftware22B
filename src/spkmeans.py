@@ -15,20 +15,22 @@ class goals(Enum):
 def checkInput(input):
     try:
         assert(len(input) == 4)
-        assert input[1].isnumeric()
+        assert input[1].isdigit()
     except:
-        print("Invalid Input!") ##fix comment later
+        print("Invalid Input!")
         sys.exit(1)
 
+# converts all data points to one long list of floats
 def createListForC(points, numpy=True):
     if numpy:
         points = [i.tolist() for i in points]
     c_points = []
-    for i in points: #convert all data points to one long list of floats
+    for i in points:
         for j in i:
             c_points.append(j)
     return c_points
 
+# sort the eigen values returned from jacobi method in decreasing order
 def reorderEigen(eigens, n):
     mat = [[0 for m in range(n)] for i in range(n+1)]
     j = 0
@@ -42,6 +44,7 @@ def reorderEigen(eigens, n):
         j += 1
     return mat
 
+# eigengap heuristic function
 def eigengap(mat, n):
     max_gap = 0
     k = 0
@@ -52,6 +55,7 @@ def eigengap(mat, n):
             k = i + 1
     return k
 
+# return the k eigen vectors that correspond with the k largest eigen values
 def kGreatestCols(eigens, n, k):
     mat = [[0 for m in range(k)] for l in range(n)]
     for i in range(n):
@@ -66,7 +70,6 @@ def renormalize(U, n, k):
         for j in range(len(U[0])):
             sum += math.pow((U[i][j]),2)
         if (math.pow(sum, 0.5) == 0):
-            # print("Special case where sum =0, forum instructions ordered to ignore") #TODO remove before submission
             continue
         for j in range(len(U[0])):
             T[i][j] = (U[i][j])/(math.pow(sum, 0.5))
@@ -86,7 +89,7 @@ def initialPoints(data_points, k, n, d):
         initial_centroids = np.vstack([initial_centroids, data_points[c]])
     return (initial_indices, initial_centroids.tolist())
 
-def printMatrix(mat): #print initial indexes and centroids
+def printMatrix(mat):
     for point in mat:
         print("".join("%.4f," %s for s in point)[:-1])
 
@@ -95,12 +98,10 @@ def printJacobi(mat):
     for point in mat[1:]:
         print("".join("%.4f," %s for s in point)[:-1])
 
-def printKmeans(initial_indices, final_centroids): #print initial indexes and centroids
+def printKmeans(initial_indices, final_centroids):
     print("".join("%d," %f for f in initial_indices).strip(","))
     for centroid in final_centroids:
         print("".join("%.4f," %s for s in centroid)[:-1])
-
-
 
 def main(k, goal, filename):
     if goal == goals.JACOBI.value:
@@ -149,19 +150,15 @@ def main(k, goal, filename):
         T = renormalize(U, n, k)
         (initial_indices, initial_centroids) = initialPoints(T, k, len(T), len(T[0]))
         if (k == 1):
-            # print("\n~~~final result~~~\n")
             printKmeans(initial_indices, initial_centroids)
             exit(0)
         c_points = createListForC(T, False)
         c_centroids = createListForC(initial_centroids, False)
         final_centroids = spkmodule.spk(c_points, c_centroids, len(T), k, len(T[0]))
-        # print("\n~~~final result~~~\n")
         printKmeans(initial_indices, final_centroids)
     else:
         print("Invalid Input!")
         exit(1)
-    
-
 
 checkInput(sys.argv)
 np.random.seed(0)

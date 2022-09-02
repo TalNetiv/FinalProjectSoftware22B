@@ -1,12 +1,12 @@
 #define PY_SSIZE_T_CLEAN
 #include <stdio.h>
-#include <assert.h>
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
 
-int n, d; /*send to functions*/
+int n, d;
 static void errorOccured();
+static void invalidInput();
 static double ** initializeMat(int n, int d);
 static double ** readFromFile(char* fileName);
 static void printMat(double** mat, int n, int d);
@@ -16,7 +16,7 @@ static void addVectors(double *vectorA, double *vectorB, int d);
 static void distribute(int n, int k, int d, double*** clusters, double **cPoints, double **centroids);
 static void updateCentroids(int k, int d, double**centroids, double ***clusters);
 static void insertToCluster(double ** cluster, double *vector, int d);
-static int isVectorZero(double *vector, int d);
+static int isVectorAllocated(double *vector, int d);
 static int bestCluster(int point_index, int k, int d, double **cPoints, double **centroids);
 static int convergentTrue(double ** curr, double ** prev, int d, int k);
 static double euclideanDistance(double* vectorA, double* vectorB, int d);
@@ -37,6 +37,11 @@ static double** jacobian(double** A, int n);
 
 static void errorOccured() {
     printf("An Error Has Occured");
+    exit(1);
+}
+
+static void invalidInput() {
+    printf("Invalid Input!");
     exit(1);
 }
 
@@ -91,7 +96,6 @@ static double ** readFromFile(char* fileName){
 static void printMat(double** mat, int n, int d){
     int i, j;
  	for (i = 0; i < n; i++) {
-        printf("row num: %d  " , i); /* TODO: delete on submisson!!!! */
   		for (j = 0; j < d; j++) {
   			if (j == d-1){
                 printf("%.4f\n" , mat[i][j]);
@@ -102,6 +106,7 @@ static void printMat(double** mat, int n, int d){
   	}  	
 }
 
+/* free allocated space */
 static void emptyMatrix(int k, double **matrix) {
     int i;
     for (i = 0; i < k; i++) {
@@ -110,6 +115,7 @@ static void emptyMatrix(int k, double **matrix) {
     free(matrix);
 }
 
+/* empty all clusters in the kmeans algorithm before redistributing into them */
 static void emptyClusters(int k, double ***clusters){
     int i;
     for (i = 0; i < k; i++) {
@@ -125,6 +131,7 @@ static void addVectors(double *vectorA, double *vectorB, int d){
     }
 }
 
+/* for every point, find the cluster represented by the closest centroid and insert the point in there */
 static void distribute(int n, int k, int d, double*** clusters, double **cPoints, double **centroids){
     int i;
     int index;
@@ -134,6 +141,7 @@ static void distribute(int n, int k, int d, double*** clusters, double **cPoints
     }
 }
 
+/* after distributing the points, update each cluster's centroid */
 static void updateCentroids(int k, int d, double**centroids, double ***clusters){
     int i;
     for (i = 0; i < k; i++){
@@ -143,13 +151,15 @@ static void updateCentroids(int k, int d, double**centroids, double ***clusters)
 
 static void insertToCluster(double ** cluster, double *vector, int d){
     int i = 0;
-    while (isVectorZero(cluster[i], d) == 0){
+    while (isVectorAllocated(cluster[i], d) == 0){
         i++;
     }
     cluster[i] = vector;
 }
 
-static int isVectorZero(double *vector, int d){
+/* in every iteration we don't know how many points would be allocated to each cluster, thus we initialize all clusters to
+ the size of nXd, and this function checks if the current vector is an actual point or merely a space allocated */
+static int isVectorAllocated(double *vector, int d){
     int j;
     for (j = 0; j < d; j++){
         if (vector[j] != -210496){
@@ -159,6 +169,7 @@ static int isVectorZero(double *vector, int d){
     return 1;
 }
 
+/* function to be used when distributing points to clusters */
 static int bestCluster(int point_index, int k, int d, double **cPoints, double **centroids){
     int m;
     int best_index = 0;
@@ -196,6 +207,7 @@ double euclideanDistance(double* vectorA, double* vectorB, int d){
     return sqrt(sum_squares);
 }
 
+/* this function computes the new centroid for each cluster after distributing points to the clusters */
 static void calculateCentroids(int cluster_index, int d, double ***clusters, double *centroid){
     int i, p;
     int l = 0;
@@ -203,7 +215,7 @@ static void calculateCentroids(int cluster_index, int d, double ***clusters, dou
     for (p = 0; p < d; p++){
         centroid[p] = 0;
     }
-    while (isVectorZero(clusters[cluster_index][vector_index], d) != 1){
+    while (isVectorAllocated(clusters[cluster_index][vector_index], d) != 1){
         addVectors(clusters[cluster_index][vector_index], centroid, d);
         l++;
         vector_index++;
@@ -224,6 +236,7 @@ static void getPrevCentroids(int k, int d, double** centroids, double **prevCent
     }
 }
 
+/* initialize k clusters with junk values */
 static double*** createClusters(int k, int d, int n){
     int i, j, l;
     double*** new_clusters;
@@ -250,6 +263,7 @@ static double*** createClusters(int k, int d, int n){
     return new_clusters;
 }
 
+/* multiplies nXn matrices */
 double ** matMultiply(double ** mat1, double ** mat2, int n) {
     int i, j, k;
     double sum = 0;
@@ -301,6 +315,7 @@ static int isMatDiag(double** mat, int n) {
     return 1;
 }
 
+/* used in jacobi algorithm convergence condition check */
 static double off(double** mat, int n) {
     int i, j;
     double sum = 0;
@@ -338,6 +353,7 @@ static double* obtainVariables(double** mat, int row, int col) {
     return variables;
 }
 
+/* creates the P rotation matrix for jacobi algorithm */
 static double** createRotMat(int n, double c, double s, int row, int col) {
     int i;
     double** P = initializeMat(n, n);
@@ -361,7 +377,6 @@ static double** kMeans(double** points, double** initial_centroids, int n, int k
             centroids[i][j]=initial_centroids[i][j];
         }
     }
- /*   centroids = initial_centroids; */
     prevCentroids = initializeMat(k, d);
     getPrevCentroids(k, d, centroids, prevCentroids);
     clusters = createClusters(k, d, n);
@@ -376,15 +391,14 @@ static double** kMeans(double** points, double** initial_centroids, int n, int k
         updateCentroids(k, d, centroids, clusters);
         iter++;
     }
-/*    emptyClusters(k, clusters);
-    emptyMatrix(k, centroids); Does this make sense??? We copied it from our HW
+    emptyClusters(k, clusters);
     emptyMatrix(k, prevCentroids);
-    emptyMatrix(n, points); */
+    emptyMatrix(n, points);
     return centroids;
 }
 
  
-static double** weightedAdjMat(double** points, int n, int d){ /*wam */
+static double** weightedAdjMat(double** points, int n, int d){ /* wam */
     int i, j;
     double** mat = initializeMat(n, n);
     for (i = 0 ; i < n ; i ++) {
@@ -416,6 +430,7 @@ static double** diagDegMat(double** points, int n, int d) { /* ddg */
             }
         mat[i][i] = sum;
     }
+    emptyMatrix(n, weights);
     return mat;
 }
 
@@ -439,6 +454,9 @@ static double** normalGraphLap(double** points, int n, int d) { /* lnorm */
             }
         }
     }
+    emptyMatrix(n, weights);
+    emptyMatrix(n, diagmat);
+    emptyMatrix(n, diagmatnew);
     return mat;
 }
 
@@ -482,20 +500,23 @@ static double** jacobian(double** A, int n) { /* TODO: add special treatment for
             mat[i][j] = V[i-1][j];
         }
     }
+    emptyMatrix(n, P);
+    emptyMatrix(n, Ptranspose);
+    emptyMatrix(n, A);
+    emptyMatrix(n, Atag);
     return mat;
 }
 
 int main(int argc, char *argv[]){
     double **points, **mat;
-    char *goal = argv[1];
-    char *fileName = argv[2];
+    char *goal, *fileName;
     if (argc != 3){ 
-        printf("Invalid Input");
-        exit(1);
+        invalidInput();
     }
-    if ( (strcmp(goal, "wam") != 0) && (strcmp(goal, "ddg") != 0) && (strcmp(goal, "lnorm") != 0) && (strcmp(goal, "jacobi") != 0) ){ 
-        printf("Invalid Input!");
-        exit(1);
+    goal = argv[1];
+    fileName = argv[2];
+    if ((strcmp(goal, "wam") != 0) && (strcmp(goal, "ddg") != 0) && (strcmp(goal, "lnorm") != 0) && (strcmp(goal, "jacobi") != 0)){ 
+        invalidInput();
     }
     points = readFromFile(fileName);
     if (strcmp(goal, "jacobi") == 0){
@@ -515,10 +536,10 @@ int main(int argc, char *argv[]){
     if (strcmp(goal, "lnorm") == 0){
         mat = normalGraphLap(points, n, d);
     }
-    if (strcmp(goal, "kkkkk") == 0){ /* to be removed later on */
-        mat = kMeans(mat, mat, 1, 1, 1);
+    /* this is to avoid compilation error since kMeans() is only called from module, and then not being used locally */
+    if (strcmp(goal, "kmeansalgorithm") == 0){
+        mat = kMeans(points, points, 1, 1, 1);
     } 
-    /* add free to matrices here */
     printMat(mat, n, n);
     emptyMatrix(n, mat);
     return 0; 
