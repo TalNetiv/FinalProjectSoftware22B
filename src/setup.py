@@ -1,7 +1,7 @@
 
 from setuptools import setup, find_packages, Extension
 
-setup (
+setup(
     name='spkmodule',
     version='0.1.0',
     author='TalAndMaya',
